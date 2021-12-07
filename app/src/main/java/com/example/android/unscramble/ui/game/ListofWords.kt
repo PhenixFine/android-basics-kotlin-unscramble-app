@@ -64,6 +64,7 @@ val allWordsList: List<String> =
         "eerie",
         "electric",
         "finish",
+        "fish",
         "flowers",
         "follow",
         "fox",

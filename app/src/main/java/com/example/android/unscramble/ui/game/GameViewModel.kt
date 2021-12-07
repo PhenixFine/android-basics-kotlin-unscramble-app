@@ -1,41 +1,41 @@
 package com.example.android.unscramble.ui.game
 
-import android.util.Log
+import androidx.lifecycle.LiveData
+import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
+import java.util.ArrayDeque
 
 class GameViewModel : ViewModel() {
-    private var _score = 0
-    val score get() = _score
+    private val _score = MutableLiveData(0)
+    val score: LiveData<Int> get() = _score
 
-    private var _currentWordCount = 0
-    val currentWordCount get() = _currentWordCount
+    private val _currentWordCount = MutableLiveData(0)
+    val currentWordCount: LiveData<Int> get() = _currentWordCount
 
-    private lateinit var _currentScrambledWord: String
-    val currentScrambledWord get() = _currentScrambledWord
+    private val _currentScrambledWord = MutableLiveData<String>()
+    val currentScrambledWord: LiveData<String> get() = _currentScrambledWord
 
-    private var wordsList: MutableList<String> = mutableListOf()
+    private val randomIndexes = ArrayDeque(getRandomIndexes())
     private lateinit var currentWord: String
 
     init {
-        Log.d("GameFragment", "GameViewModel created!")
         getNextWord()
     }
 
     fun nextWord(): Boolean {
-        return if (_currentWordCount < MAX_NO_OF_WORDS) {
+        return if (_currentWordCount.value!! < MAX_NO_OF_WORDS) {
             getNextWord()
             true
         } else false
     }
 
     private fun getNextWord() {
-        currentWord = allWordsList.random()
-        if (wordsList.contains(currentWord)) getNextWord() else {
-            scrambleWord()
-            ++_currentWordCount
-            wordsList.add(currentWord)
-        }
+        currentWord = allWordsList[randomIndexes.pop()]
+        scrambleWord()
+        _currentWordCount.value = (_currentWordCount.value)?.inc()
     }
+
+    private fun getRandomIndexes() = (0..allWordsList.lastIndex).shuffled()
 
     private fun scrambleWord() {
         val scramble = currentWord.toCharArray()
@@ -44,11 +44,11 @@ class GameViewModel : ViewModel() {
             scramble.shuffle()
         } while (String(scramble) == currentWord)
 
-        _currentScrambledWord = String(scramble)
+        _currentScrambledWord.value = String(scramble)
     }
 
     private fun increaseScore() {
-        _score += SCORE_INCREASE
+        _score.value = (_score.value)?.plus(SCORE_INCREASE)
     }
 
     fun isUserWordCorrect(playerWord: String): Boolean {
@@ -59,14 +59,12 @@ class GameViewModel : ViewModel() {
     }
 
     fun reinitializeData() {
-        _score = 0
-        _currentWordCount = 0
-        wordsList.clear()
+        _score.value = 0
+        _currentWordCount.value = 0
+        if (randomIndexes.size < MAX_NO_OF_WORDS) {
+            randomIndexes.clear()
+            randomIndexes.addAll(getRandomIndexes())
+        }
         getNextWord()
-    }
-
-    override fun onCleared() {
-        super.onCleared()
-        Log.d("GameFragment", "GameViewModel destroyed!")
     }
 }
